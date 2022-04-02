@@ -1,7 +1,7 @@
 
 # FLAMES
 
-<img  src="inst/images/FLAMES-01.png">
+<img src="img/flames_logo.png" width="400">
 
 This branch is for verifying outputs with [the R debug pipeline](https://github.com/OliverVoogd/FLAMES/tree/debug). Sorting is used excessively to force results being exactly the same to the debug branch of the Python `FLAMES` pipeline, this may lead to more memory usage and longer running time.
 
