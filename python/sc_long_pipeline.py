@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import pickle
 import os
 import sys
 import datetime
@@ -168,6 +169,9 @@ def sc_long_pipeline(args):
     # find isoform
     print "### read gene annotation", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     chr_to_gene, transcript_dict, gene_to_transcript, transcript_to_exon = parse_gff_tree(args.gff3)
+    #pickle.dump(transcript_dict, open("transcript_dict", "wb"))
+    #pickle.dump(gene_to_transcript, open("gene_to_transcript", "wb"))
+    #pickle.dump(transcript_to_exon, open("transcript_to_exon", "wb"))
     transcript_to_junctions =  OrderedDict((tr, blocks_to_junctions(transcript_to_exon[tr])) for tr in transcript_to_exon)
     remove_similar_tr(transcript_dict, gene_to_transcript, transcript_to_exon)
     gene_dict = get_gene_flat(gene_to_transcript, transcript_to_exon)
@@ -178,7 +182,7 @@ def sc_long_pipeline(args):
         config=config_dict["isoform_parameters"], 
         downsample_ratio=args.downsample_ratio,
         raw_gff3=raw_splice_isoform if config_dict["global_parameters"]["generate_raw_isoform"] else None)
-        #sys.exit()
+        #exit()
     else:
         print "### skip finding isoforms", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

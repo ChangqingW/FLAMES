@@ -14,7 +14,6 @@ import random
 import copy
 from itertools import izip
 from parse_gene_anno import parse_gff_tree
-import re
 
 
 def take_closest(l, num):
@@ -164,7 +163,7 @@ def remove_similar_tr(transcript_dict, gene_to_transcript, transcript_to_exon, t
         for tr_idx in range(len(gene_to_transcript[g])-1):
             for tr2_idx in range(tr_idx+1,len(gene_to_transcript[g])):
                 if is_exon_similar(transcript_to_exon[gene_to_transcript[g][tr_idx]],transcript_to_exon[gene_to_transcript[g][tr2_idx]], thr):
-                    dup_list.append(tr2_idx)
+                    dup_list.append(max(tr2_idx, tr_idx))
                     dup_stat["duplicated_transcripts"] += 1
                     #print gene_to_transcript[g][tr2_idx]
         if len(dup_list) > 0:
@@ -465,15 +464,15 @@ class Isoforms(object):
         lr_pair_tmp =  OrderedDict()
         for j in self.junction_dict:
             if len(self.junction_list[self.junction_dict[j]]) >= self.Min_sup_cnt:  # only more than `Min_sup_cnt` reads support this splicing
-                new_j = tuple((Counter(it[i] for it in self.junction_list[self.junction_dict[j]]).most_common(1)[0][0] for i in range(len(j))))
+                new_j = tuple((sorted(Counter(it[i] for it in self.junction_list[self.junction_dict[j]]).most_common(), key=lambda x: (x[1], x[0]), reverse=True)[0][0] for i in range(len(j)))) 
                 junction_tmp[new_j] = self.junction_dict[j]
-                strand_cnt_tmp[new_j] =  Counter(self.strand_cnt[j]).most_common(1)[0][0]
+                strand_cnt_tmp[new_j] =  sorted(Counter(self.strand_cnt[j]).most_common(), key=lambda x: (x[1], x[0]), reverse=True)[0][0] 
                 lr_pair_tmp[new_j] = self.lr_pair[j]
         for j in self.single_block_dict:
             if len(self.single_blocks[self.single_block_dict[j]]) >= self.Min_sup_cnt:
-                new_j = tuple((Counter(it[i] for it in self.single_blocks[self.single_block_dict[j]]).most_common(1)[0][0] for i in range(len(j))))
+                new_j = tuple((sorted(Counter(it[i] for it in self.single_blocks[self.single_block_dict[j]]).most_common(), key=lambda x: (x[1], x[0]), reverse=True)[0][0] for i in range(len(j)))) 
                 single_block_tmp[new_j] = self.single_block_dict[j]
-                strand_cnt_tmp[new_j] =  Counter(self.strand_cnt[j]).most_common(1)[0][0]
+                strand_cnt_tmp[new_j] =  sorted(Counter(self.strand_cnt[j]).most_common(), key=lambda x: (x[1], x[0]), reverse=True)[0][0]
         self.single_block_dict = single_block_tmp
         self.junction_dict = junction_tmp
         self.strand_cnt = strand_cnt_tmp
@@ -530,7 +529,7 @@ class Isoforms(object):
     def filter_TSS_TES(self, out_f, known_site=None, fdr_cutoff=0.01):
         bedgraph_fmt = "{_ch}\t{_st}\t{_en}\t{_sc}\n"
         def filter_site(l_cnt):
-            mx = np.array(l_cnt.most_common())
+            mx = np.array(sorted(l_cnt.most_common(), key=lambda x: (x[1], x[0]), reverse=True))
             #print mx[:,:5]
             #mx[:,1] = np.log(mx[:,1])
             if mx[0,1]==1:
@@ -585,7 +584,7 @@ class Isoforms(object):
                 cnt_r = insert_dist(fs_r[:,0],known_site["right"] if known_site is not None else None)
                 cnt_r.sort()
         for j in self.lr_pair:
-            tmp_pair = sorted(Counter(self.lr_pair[j]).most_common())
+            tmp_pair = sorted(Counter(self.lr_pair[j]).most_common(), key=lambda x: (x[1], x[0][0], x[0][1]), reverse=True)
             pair_after_filtering = []
             pair_enrich = []
             for p,_ in tmp_pair:  # first search for common enriched TSS/TES
@@ -955,21 +954,6 @@ class Isoforms(object):
         else:
             return ""
 
-
-
-def atoi(text):
-    return int(text) if text.isdigit() else text
-
-def natural_keys(text):
-    '''
-    alist.sort(key=natural_keys) sorts in human order
-    http://nedbatchelder.com/blog/200712/human_sorting.html
-    (See Toothy's implementation in the comments)
-    '''
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
-
-
-
 def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, gene_dict, transcript_to_junctions, transcript_dict, fa_f, config, downsample_ratio, raw_gff3=None):
     if "random_seed" in config.keys():
         random.seed(config["random_seed"])
@@ -987,7 +971,7 @@ def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, ge
     fa_dict =  OrderedDict()
     for c in get_fa(fa_f):
         fa_dict[c[0]] = c[1]
-    for ch in sorted(chr_to_blocks.keys(), key=natural_keys):
+    for ch in sorted(chr_to_blocks.keys()):
         # print ch
         #if ch != "5":
         #    continue
