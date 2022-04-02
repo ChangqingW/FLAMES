@@ -1,7 +1,7 @@
 # quantify transcript
 import pysam
 import os
-from collections import Counter
+from collections import Counter, OrderedDict
 import gzip
 import numpy as np
 import editdistance
@@ -10,10 +10,10 @@ from parse_gene_anno import parse_gff_tree
 
 def umi_dedup(l, has_UMI):
     if has_UMI:
-        l_cnt = Counter(l).most_common()
+        l_cnt = sorted(Counter(l).most_common(), key=lambda x: (x[1], x[0]), reverse=True)
         if len(l_cnt)==1:
             return 1
-        rm_umi = {}
+        rm_umi = OrderedDict()
         for ith in range(len(l_cnt)-1):
             for jth in range(len(l_cnt)-1,ith,-1):  # first assess the low abundant UMI
                 if l_cnt[jth][0] not in rm_umi:
@@ -66,11 +66,11 @@ def make_bc_dict(bc_anno):
 def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_read_coverage, **kwargs):
     """
     """
-    fa_idx = dict((it.strip().split()[0],int(it.strip().split()[1]) ) for it in open(fa_idx_f))
-    bc_tr_count_dict = {}
-    bc_tr_badcov_count_dict = {}
-    tr_cov_dict = {}
-    read_dict = {}
+    fa_idx = OrderedDict((it.strip().split()[0],int(it.strip().split()[1]) ) for it in open(fa_idx_f))
+    bc_tr_count_dict = OrderedDict()
+    bc_tr_badcov_count_dict = OrderedDict()
+    tr_cov_dict = OrderedDict()
+    read_dict = OrderedDict()
     cnt_stat = Counter()
     bamfile = pysam.AlignmentFile(bam_in, "rb")
     if "bc_file" in kwargs.keys() and kwargs["bc_file"] != "":
@@ -97,7 +97,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
         if tr not in fa_idx:
             cnt_stat["not_in_annotation"] += 1
             print tr, "not in annotation ???"
-    tr_kept = dict((tr,tr) for tr in tr_cov_dict if len([it for it in tr_cov_dict[tr] if it > 0.9])>min_sup_reads)
+    tr_kept = OrderedDict((tr,tr) for tr in tr_cov_dict if len([it for it in tr_cov_dict[tr] if it > 0.9])>min_sup_reads)
     unique_tr_count = Counter(read_dict[r][0][0] for r in read_dict if read_dict[r][0][2]>0.9)
     for r in read_dict:
         tmp = read_dict[r]
@@ -112,28 +112,28 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
             bc = bc_dict[bc]
         if len(tmp)==1 and tmp[0][4]>0:
             if bc not in bc_tr_count_dict:
-                bc_tr_count_dict[bc] = {}
+                bc_tr_count_dict[bc] = OrderedDict()
             bc_tr_count_dict[bc].setdefault(hit[0], []).append(umi)
             cnt_stat["counted_reads"] += 1
         elif len(tmp)>1 and tmp[0][1]==tmp[1][1] and tmp[0][3]==tmp[1][3]:
             if hit[1] > 0.8:
                 if bc not in bc_tr_count_dict:
-                    bc_tr_count_dict[bc] = {}
+                    bc_tr_count_dict[bc] = OrderedDict()
                 bc_tr_count_dict[bc].setdefault(hit[0], []).append(umi)
                 cnt_stat["counted_reads"] += 1
             else:
                 cnt_stat["ambigious_reads"] += 1
                 if bc not in bc_tr_badcov_count_dict:
-                    bc_tr_badcov_count_dict[bc] = {}
+                    bc_tr_badcov_count_dict[bc] = OrderedDict()
                 bc_tr_badcov_count_dict[bc].setdefault(hit[0], []).append(umi)
         elif hit[2] < min_tr_coverage or hit[3] < min_read_coverage:
             cnt_stat["not_enough_coverage"] += 1
             if bc not in bc_tr_badcov_count_dict:
-                bc_tr_badcov_count_dict[bc] = {}
+                bc_tr_badcov_count_dict[bc] = OrderedDict()
             bc_tr_badcov_count_dict[bc].setdefault(hit[0], []).append(umi)
         else:
             if bc not in bc_tr_count_dict:
-                bc_tr_count_dict[bc] = {}
+                bc_tr_count_dict[bc] = OrderedDict()
             bc_tr_count_dict[bc].setdefault(hit[0], []).append(umi)
             cnt_stat["counted_reads"] += 1
     print cnt_stat

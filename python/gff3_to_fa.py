@@ -2,6 +2,7 @@
 
 from parse_gene_anno import parse_gff_tree
 import subprocess
+from collections import OrderedDict
 CP = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N","a":"t","t":"a","c":"g","g":"c"}
 
 
@@ -40,9 +41,9 @@ def write_fa(fn, na, seq, warp_len=50):
 
 def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
                        gene_to_transcript, transcript_to_exon, ref_dict = None):
-    global_isoform_dict = {}
-    global_seq_dict = {}
-    fa_dict = {}
+    global_isoform_dict = OrderedDict()
+    global_seq_dict = OrderedDict()
+    fa_dict = OrderedDict()
     fa_out = open(fa_out_f, "w")
     for ch, seq in get_fa(fa_file):
         if ch not in chr_to_gene:
