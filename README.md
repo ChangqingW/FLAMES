@@ -18,3 +18,16 @@ This branch is for verifying outputs with [the R debug pipeline](https://github.
 > Changed in version 3.7: As a dict subclass, Counter inherited the capability to remember insertion order. Math operations on Counter objects also preserve order. Results are ordered according to when an element is first encountered in the left operand and then by the order encountered in the right operand.
 
 <https://docs.python.org/3/library/collections.html?highlight=counter#collections.Counter>
+
+# Installation
+
+The easiest way to install the dependencies for this package is using a conda environment. The scripts can then be cloned from git.
+
+```
+conda create -n FLAMES \
+    python=2.7 samtools pysam minimap2 numpy editdistance \
+    -c bioconda -c conda-forge
+git clone https://github.com/ChangqingW/FLAMES.git
+cd FLAMES
+git checkout debug
+```
